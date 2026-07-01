@@ -2,7 +2,7 @@
 
 Materi ini membahas cara membuat layout halaman utama secara bertahap. Target akhirnya adalah halaman kampus/lembaga dengan susunan seperti situs referensi: menu atas, hero, berita, video, dan footer.
 
-Fokus pada materi ini adalah **struktur layout**, bukan backend atau database.
+Fokus pada materi ini adalah **struktur layout**. Backend dipakai seperlunya untuk menjalankan tampilan, bukan untuk database.
 
 ## Tujuan Belajar
 
@@ -35,17 +35,19 @@ flowchart TD
 
 ```text
 node-web/
-|-- server.js
-|-- public/
-|   `-- css/
-|       `-- style.css
-`-- views/
-		|-- home.handlebars
-		|-- layouts/
-		|   `-- main.handlebars
-		`-- partials/
-				|-- navbar.handlebars
-				`-- footer.handlebars
+`-- backend/
+		|-- server.js
+		|-- package.json
+		|-- public/
+		|   `-- css/
+		|       `-- style.css
+		`-- views/
+				|-- home.handlebars
+				|-- layouts/
+				|   `-- main.handlebars
+				`-- partials/
+						|-- navbar.handlebars
+						`-- footer.handlebars
 ```
 
 ## Tahap 1: Membuat Menu Atas
@@ -58,7 +60,7 @@ Isi menu atas biasanya:
 2. Menu navigasi.
 3. Tombol atau link penting.
 
-Contoh `views/partials/navbar.handlebars`:
+Contoh `backend/views/partials/navbar.handlebars`:
 
 ```html
 <header class="topbar">
@@ -115,7 +117,7 @@ Hero adalah area paling atas setelah menu. Biasanya berisi gambar besar, judul u
 
 Pada situs referensi, bagian ini terasa seperti banner informasi utama.
 
-Contoh di `views/home.handlebars`:
+Contoh di `backend/views/home.handlebars`:
 
 ```html
 <section class="hero" id="hero">
@@ -321,7 +323,7 @@ Footer adalah penutup halaman yang berisi informasi kontak, jam layanan, dan lin
 
 Pada situs referensi, footer memuat identitas lembaga, alamat, jam layanan, dan info tambahan.
 
-Contoh `views/partials/footer.handlebars`:
+Contoh `backend/views/partials/footer.handlebars`:
 
 ```html
 <footer class="site-footer" id="footer">
@@ -378,7 +380,7 @@ Tujuan tahap ini:
 
 ## Menggabungkan Semua Bagian
 
-Setelah semua section selesai, halaman `home.handlebars` dapat disusun seperti ini:
+Setelah semua section selesai, halaman `backend/views/home.handlebars` dapat disusun seperti ini:
 
 ```html
 {{> navbar}}
@@ -400,7 +402,7 @@ Setelah semua section selesai, halaman `home.handlebars` dapat disusun seperti i
 
 ## Layout Utama Handlebars
 
-Contoh `views/layouts/main.handlebars`:
+Contoh `backend/views/layouts/main.handlebars`:
 
 ```html
 <!DOCTYPE html>
@@ -429,6 +431,57 @@ Supaya siswa tidak bingung, kerjakan dalam urutan ini:
 6. Buat footer.
 7. Rapikan CSS.
 8. Baru setelah itu hubungkan ke data dinamis.
+
+## Eksekusi Tahap 02 (Metode Sama seperti Tahap 01)
+
+Jalankan dari root project:
+
+```bash
+cd backend
+npm init -y
+npm install express express-handlebars
+npm install -D nodemon
+```
+
+Pastikan script di `backend/package.json`:
+
+```json
+"scripts": {
+	"dev": "nodemon server.js",
+	"start": "node server.js"
+}
+```
+
+Jalankan server:
+
+```bash
+npm run dev
+```
+
+Atau mode normal:
+
+```bash
+npm start
+```
+
+Buka browser:
+
+```text
+http://localhost:3000
+```
+
+Stop server normal:
+
+```text
+Ctrl + C
+```
+
+Jika port 3000 terkunci (Windows):
+
+```bash
+netstat -ano | findstr :3000
+taskkill /PID PID_NYA /F
+```
 
 ## Catatan Penting Untuk Mengajar
 

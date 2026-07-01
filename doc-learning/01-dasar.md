@@ -36,21 +36,27 @@ flowchart LR
 Buka terminal di folder project, lalu jalankan:
 
 ```bash
+cd backend
 npm init -y
 npm install express express-handlebars
+npm install -D nodemon
 ```
 
 ## Struktur Folder Sederhana
 
 ```text
 node-web/
-|-- server.js
-|-- package.json
-`-- views/
-		`-- home.handlebars
+`-- backend/
+		|-- server.js
+		|-- package.json
+		|-- package-lock.json
+		`-- views/
+				|-- home.handlebars
+				`-- layouts/
+						`-- main.handlebars
 ```
 
-## File `server.js`
+## File `backend/server.js`
 
 ```js
 const express = require('express');
@@ -76,7 +82,7 @@ app.listen(PORT, () => {
 });
 ```
 
-## File `views/home.handlebars`
+## File `backend/views/layouts/main.handlebars`
 
 ```html
 <!DOCTYPE html>
@@ -87,11 +93,17 @@ app.listen(PORT, () => {
 	<title>{{title}}</title>
 </head>
 <body>
-	<h1>{{title}}</h1>
-	<h2>Selamat datang, {{nama}}!</h2>
-	<p>{{pesan}}</p>
+	{{{body}}}
 </body>
 </html>
+```
+
+## File `backend/views/home.handlebars`
+
+```html
+<h1>{{title}}</h1>
+<h2>Selamat datang, {{nama}}!</h2>
+<p>{{pesan}}</p>
 ```
 
 ## Cara Menjalankan
@@ -99,7 +111,14 @@ app.listen(PORT, () => {
 Jalankan perintah berikut:
 
 ```bash
-node server.js
+cd backend
+npm run dev
+```
+
+Atau mode normal:
+
+```bash
+npm start
 ```
 
 Lalu buka browser ke alamat berikut:
@@ -136,6 +155,10 @@ Mendaftarkan Handlebars sebagai mesin template.
 
 Memberi tahu Express bahwa file tampilan menggunakan ekstensi `.handlebars`.
 
+`views/layouts/main.handlebars`
+
+Menjadi layout utama (kerangka HTML), sedangkan `home.handlebars` menjadi isi halaman.
+
 `res.render('home', {...})`
 
 Menampilkan file `home.handlebars` sambil mengirim data ke halaman.
@@ -159,6 +182,8 @@ Dipakai di `home.handlebars` dengan format:
 {{nama}}
 {{pesan}}
 ```
+
+Lalu konten itu diletakkan ke layout utama lewat `{{{body}}}` di `main.handlebars`.
 
 Artinya, Handlebars akan mengganti `{{...}}` dengan nilai yang dikirim dari server.
 

@@ -1,0 +1,25 @@
+{{> navbar}}
+
+<section class="detail-berita">
+  <div class="container detail-card">
+    <p class="news-date">{{berita.tanggal}}</p>
+    <h1>{{berita.judul}}</h1>
+
+    <img src="{{berita.gambar}}" alt="{{berita.judul}}" class="detail-image" />
+
+    <p>{{berita.ringkasan}}</p>
+    <p>
+      Ini adalah halaman detail berita lokal di project. Siswa bisa membaca ringkasan
+      berita di sini, lalu membuka sumber asli jika dibutuhkan.
+    </p>
+
+    <div class="detail-actions">
+      <a href="{{berita.sumber}}" target="_blank" rel="noreferrer" class="btn-secondary">
+        Buka Sumber Asli
+      </a>
+      <a href="/" class="btn-back">Kembali ke Beranda</a>
+    </div>
+  </div>
+</section>
+
+{{> footer}}

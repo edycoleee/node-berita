@@ -1,0 +1,55 @@
+{{> navbar}}
+
+<section class="hero" id="hero">
+  <div class="container hero-content">
+    <div>
+      <p class="eyebrow">Lembaga Penelitian dan Pengabdian</p>
+      <h1>Mendorong Riset, Inovasi, dan Pengabdian Masyarakat</h1>
+      <p>
+        Halaman utama ini menjadi pusat informasi kegiatan, pengumuman,
+        publikasi, dan dokumentasi lembaga.
+      </p>
+      <a href="#berita" class="btn-primary">Lihat Berita</a>
+    </div>
+  </div>
+</section>
+
+<section class="news-section" id="berita">
+  <div class="container">
+    <h2>Berita Terkini</h2>
+
+    <div class="news-grid">
+      {{#each beritaList}}
+        <article class="news-card">
+          <img src="{{this.gambar}}" alt="{{this.judul}}" />
+          <div class="news-body">
+            <p class="news-date">{{this.tanggal}}</p>
+            <h3>
+              <a href="/berita/{{this.slug}}" class="news-link">{{this.judul}}</a>
+            </h3>
+            <p>{{this.ringkasan}}</p>
+          </div>
+        </article>
+      {{/each}}
+    </div>
+  </div>
+</section>
+
+<section class="video-section" id="video">
+  <div class="container">
+    <h2>Video Kegiatan</h2>
+    <p>Dokumentasi kegiatan penelitian, pengabdian, dan seminar kampus.</p>
+
+    <div class="video-wrapper">
+      <iframe
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+        title="Video kegiatan"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+</section>
+
+{{> footer}}

@@ -1,89 +1,164 @@
-# 3. Membuat Berita yang Bisa Diklik ke Halaman Detail dan Kembali ke Beranda
+# 3. Layout Berita: Klik Kartu ke Detail Lokal + Tombol Kembali
 
-Pada tahap ini, kita akan membuat kartu berita di halaman utama yang jika diklik akan menuju ke halaman berita berikut:
+Pada tahap ini, kita melanjutkan layout tahap 02 dengan menambahkan **halaman detail berita lokal** di project Express.
 
-https://lppm.undip.ac.id/2026/06/27/lppm-universitas-diponegoro-selenggarakan-kegiatan-article-subsmission-camp-untuk-dorong-peningkatan-publikasi-internasional/
+Alur yang dibuat:
 
-Setelah itu, siswa juga memahami cara kembali ke halaman utama.
+1. Dari halaman beranda (`/`), siswa klik judul berita.
+2. Masuk ke halaman detail lokal (`/berita/:slug`).
+3. Dari halaman detail, klik tombol `Kembali ke Beranda`.
 
 ## Tujuan Belajar
 
-1. Membuat judul atau kartu berita bisa diklik.
-2. Mengarahkan pengunjung ke halaman berita tujuan.
-3. Memahami perbedaan link internal dan link eksternal.
-4. Mengetahui cara kembali ke halaman utama.
+1. Membuat judul berita pada kartu bisa diklik.
+2. Mengarahkan pengguna ke route detail lokal (`/berita/:slug`).
+3. Menambahkan tombol navigasi kembali ke halaman utama.
+4. Memahami alur route list -> detail -> kembali.
 
 ## Konsep Dasar
 
-Pada HTML, perpindahan halaman dilakukan dengan tag `a`.
+Pada tahap ini kita menggunakan **link internal** (masih di aplikasi yang sama), bukan langsung ke website luar.
 
-Contoh paling sederhana:
+Keuntungan link internal:
 
-```html
-<a href="https://contoh.com">Buka halaman</a>
+1. Kita bebas mengatur tampilan halaman detail.
+2. Kita bisa menambahkan tombol `Kembali ke Beranda`.
+3. Siswa lebih mudah memahami alur navigasi antar route di Express.
+
+## Struktur File yang Dipakai
+
+```text
+backend/
+|-- server.js
+|-- public/
+|   `-- css/
+|       `-- style.css
+`-- views/
+    |-- home.handlebars
+    |-- detail-berita.handlebars
+    |-- layouts/
+    |   `-- main.handlebars
+    `-- partials/
+        |-- navbar.handlebars
+        `-- footer.handlebars
 ```
 
-Jika link diarahkan ke website lain, maka itu disebut **link eksternal**.
+## 1) Route Beranda dan Route Detail Berita
 
-Karena halaman tujuan berada di situs luar, kita **tidak bisa menambahkan tombol kembali di halaman situs luar tersebut** dari project kita. Maka ada 2 cara yang bisa diajarkan:
+Contoh pada `backend/server.js`:
 
-1. Buka artikel di tab yang sama, lalu kembali dengan tombol Back di browser.
-2. Buka artikel di tab baru, sehingga halaman utama tetap terbuka.
+```js
+const beritaList = [
+	{
+		slug: 'article-submission-camp',
+		tanggal: '27 Juni 2026',
+		judul: 'LPPM Universitas Diponegoro Selenggarakan Kegiatan Article Submission Camp',
+		ringkasan:
+			'Kegiatan ini mendorong peningkatan publikasi internasional melalui pendampingan intensif.',
+		gambar:
+			'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+		sumber:
+			'https://lppm.undip.ac.id/2026/06/27/lppm-universitas-diponegoro-selenggarakan-kegiatan-article-subsmission-camp-untuk-dorong-peningkatan-publikasi-internasional/'
+	}
+];
 
-Untuk siswa SMA, cara paling mudah dipahami adalah mulai dari tab yang sama.
+app.get('/', (req, res) => {
+	res.render('home', {
+		title: 'Beranda',
+		beritaList
+	});
+});
 
-## Cara 1: Klik Berita Menuju Halaman Artikel di Tab yang Sama
+app.get('/berita/:slug', (req, res) => {
+	const berita = beritaList.find((item) => item.slug === req.params.slug);
 
-Contoh pada `home.handlebars`:
+	if (!berita) {
+		return res.status(404).send('Berita tidak ditemukan');
+	}
+
+	return res.render('detail-berita', {
+		title: berita.judul,
+		berita
+	});
+});
+```
+
+Penjelasan singkat:
+
+1. Data berita disimpan di array `beritaList`.
+2. `/` menampilkan daftar berita.
+3. `/berita/:slug` menampilkan detail sesuai slug yang diklik.
+4. Jika slug tidak ada, kirim status `404`.
+
+## 2) Link Berita di Halaman Utama
+
+Contoh pada `backend/views/home.handlebars`:
 
 ```html
 <section class="news-section" id="berita">
 	<div class="container">
 		<h2>Berita Terkini</h2>
 
-		<article class="news-card">
-			<img
-				src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
-				alt="Article Submission Camp"
-			/>
-
-			<div class="news-body">
-				<p class="news-date">27 Juni 2026</p>
-
-				<h3>
-					<a
-						href="https://lppm.undip.ac.id/2026/06/27/lppm-universitas-diponegoro-selenggarakan-kegiatan-article-subsmission-camp-untuk-dorong-peningkatan-publikasi-internasional/"
-						class="news-link">
-						LPPM Universitas Diponegoro Selenggarakan Kegiatan Article Submission Camp
-					</a>
-				</h3>
-
-				<p>
-					Klik judul berita untuk membuka halaman artikel lengkap.
-				</p>
-			</div>
-		</article>
+		<div class="news-grid">
+			{{#each beritaList}}
+				<article class="news-card">
+					<img src="{{this.gambar}}" alt="{{this.judul}}" />
+					<div class="news-body">
+						<p class="news-date">{{this.tanggal}}</p>
+						<h3>
+							<a href="/berita/{{this.slug}}" class="news-link">{{this.judul}}</a>
+						</h3>
+						<p>{{this.ringkasan}}</p>
+					</div>
+				</article>
+			{{/each}}
+		</div>
 	</div>
 </section>
 ```
 
-Jika judul diklik, browser akan berpindah ke halaman artikel LPPM UNDIP.
+Jika judul diklik, pengguna masuk ke route lokal `/berita/:slug`.
 
-## Cara Kembali ke Halaman Utama
+## 3) Halaman Detail Berita + Tombol Kembali
 
-Karena halaman tujuan adalah website luar, cara kembali yang paling sederhana adalah:
+Contoh pada `backend/views/detail-berita.handlebars`:
 
-1. Klik tombol Back di browser.
-2. Browser akan kembali ke halaman utama project kita.
+```html
+{{> navbar}}
 
-Penjelasan untuk siswa:
+<section class="detail-berita">
+	<div class="container detail-card">
+		<p class="news-date">{{berita.tanggal}}</p>
+		<h1>{{berita.judul}}</h1>
 
-- Dari halaman utama, kita pindah ke artikel.
-- Untuk kembali, gunakan tombol kembali pada browser.
+		<img src="{{berita.gambar}}" alt="{{berita.judul}}" class="detail-image" />
 
-## CSS Link Berita
+		<p>{{berita.ringkasan}}</p>
+		<p>
+			Ini adalah halaman detail berita lokal di project.
+		</p>
 
-Supaya link judul terlihat rapi:
+		<div class="detail-actions">
+			<a href="{{berita.sumber}}" target="_blank" rel="noreferrer" class="btn-secondary">
+				Buka Sumber Asli
+			</a>
+			<a href="/" class="btn-back">Kembali ke Beranda</a>
+		</div>
+	</div>
+</section>
+
+{{> footer}}
+```
+
+Bagian penting untuk navigasi balik adalah:
+
+```html
+<a href="/" class="btn-back">Kembali ke Beranda</a>
+```
+
+## 4) CSS Tambahan untuk Link dan Tombol
+
+Tambahkan di `backend/public/css/style.css`:
 
 ```css
 .news-link {
@@ -94,103 +169,34 @@ Supaya link judul terlihat rapi:
 .news-link:hover {
 	text-decoration: underline;
 }
+
+.detail-actions {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-top: 20px;
+}
+
+.btn-back {
+	background: #0b3d91;
+	color: #fff;
+	display: inline-block;
+	border-radius: 8px;
+	padding: 12px 18px;
+	text-decoration: none;
+	font-weight: 700;
+}
 ```
-
-## Cara 2: Klik Berita di Tab Baru
-
-Kalau ingin halaman utama tetap terbuka, tambahkan `target="_blank"`.
-
-```html
-<a
-	href="https://lppm.undip.ac.id/2026/06/27/lppm-universitas-diponegoro-selenggarakan-kegiatan-article-subsmission-camp-untuk-dorong-peningkatan-publikasi-internasional/"
-	target="_blank"
-	rel="noreferrer"
-	class="news-link">
-	Lihat berita lengkap
-</a>
-```
-
-Hasilnya:
-
-1. Artikel terbuka di tab baru.
-2. Halaman utama project kita tetap terbuka di tab lama.
-3. Siswa tidak perlu menekan Back.
-
-## Mana yang Sebaiknya Dipakai?
-
-Untuk latihan dasar, gunakan dulu **tab yang sama**, karena siswa akan lebih mudah memahami konsep perpindahan halaman.
-
-Untuk kenyamanan pengguna, **tab baru** juga sering dipakai jika link menuju website luar.
-
-## Jika Ingin Ada Tombol Kembali di Project Kita
-
-Kalau Anda ingin benar-benar ada tombol `Kembali ke Beranda`, maka halaman detail beritanya harus dibuat **di project kita sendiri**, bukan langsung memakai halaman situs luar.
-
-Alurnya menjadi seperti ini:
-
-1. Halaman utama menampilkan daftar berita.
-2. Ketika berita diklik, masuk ke route lokal misalnya `/berita/article-submission-camp`.
-3. Di halaman detail lokal itu kita bisa tambahkan tombol `Kembali ke Beranda`.
-
-Contoh route Express:
-
-```js
-app.get('/', (req, res) => {
-	res.render('home', {
-		title: 'Beranda'
-	});
-});
-
-app.get('/berita/article-submission-camp', (req, res) => {
-	res.render('detail-berita', {
-		title: 'Detail Berita',
-		judul: 'LPPM Universitas Diponegoro Selenggarakan Kegiatan Article Submission Camp',
-		sumber: 'https://lppm.undip.ac.id/2026/06/27/lppm-universitas-diponegoro-selenggarakan-kegiatan-article-subsmission-camp-untuk-dorong-peningkatan-publikasi-internasional/'
-	});
-});
-```
-
-Contoh link berita di halaman utama:
-
-```html
-<a href="/berita/article-submission-camp" class="news-link">
-	LPPM Universitas Diponegoro Selenggarakan Kegiatan Article Submission Camp
-</a>
-```
-
-Contoh `detail-berita.handlebars`:
-
-```html
-<section class="detail-berita">
-	<div class="container">
-		<h1>{{judul}}</h1>
-		<p>
-			Ini adalah halaman detail berita di project kita.
-			Untuk membaca sumber aslinya, buka link berikut.
-		</p>
-
-		<p>
-			<a href="{{sumber}}" target="_blank" rel="noreferrer">Buka sumber asli berita</a>
-		</p>
-
-		<p>
-			<a href="/" class="btn-back">Kembali ke Beranda</a>
-		</p>
-	</div>
-</section>
-```
-
-Dengan cara ini, tombol kembali benar-benar bisa dibuat karena halaman detailnya ada di project kita sendiri.
 
 ## Rekomendasi Mengajar
 
 Urutan terbaik untuk siswa SMA:
 
-1. Ajarkan dulu link eksternal sederhana pada judul berita.
-2. Tunjukkan bahwa tombol Back browser bisa mengembalikan ke halaman utama.
-3. Setelah itu baru ajarkan route lokal untuk halaman detail berita.
-4. Terakhir, tambahkan tombol `Kembali ke Beranda` di halaman detail lokal.
+1. Tunjukkan dulu alur klik judul berita dari beranda ke detail lokal.
+2. Jelaskan konsep `slug` pada route `/berita/:slug`.
+3. Tunjukkan fungsi tombol `Kembali ke Beranda`.
+4. Setelah paham route lokal, baru kenalkan link eksternal ke sumber asli.
 
 ## Kesimpulan
 
-Jika berita langsung mengarah ke halaman LPPM UNDIP, maka klik berita cukup dibuat dengan tag `a` dan kembali ke halaman utama dilakukan dengan tombol Back browser atau dengan membuka artikel di tab baru. Jika ingin ada tombol `Kembali ke Beranda` di dalam sistem yang kita buat, maka halaman detail beritanya harus dibuat sebagai halaman lokal di project Express kita.
+Untuk fitur navigasi yang jelas bagi siswa, pendekatan terbaik adalah membuat halaman detail berita **di project lokal**. Dengan begitu, berita bisa diklik dari beranda ke detail, lalu kembali lagi lewat tombol `Kembali ke Beranda` tanpa bergantung pada tombol Back browser.

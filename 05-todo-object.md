@@ -67,9 +67,14 @@ node-web/
 				`-- main.handlebars
 ```
 
-## Tahap 1: Menyiapkan Data Todo di `server.js`
+## Langkah Praktik Versi Siswa SMA
 
-Pertama, siapkan array object untuk menyimpan data Todo sementara.
+Di bagian ini, langkah dibuat lebih singkat dan langsung praktik.
+Gunakan urutan ini saat mengajar agar siswa tidak kewalahan.
+
+### Langkah 1 - Siapkan server dan data awal
+
+Masukkan kode dasar ini ke `server.js`:
 
 ```js
 const express = require('express');
@@ -78,7 +83,7 @@ const { engine } = require('express-handlebars');
 const app = express();
 const PORT = 3000;
 
-app.engine('handlebars', engine());
+app.engine('handlebars', engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 
@@ -92,15 +97,14 @@ let todos = [
 ];
 ```
 
-Penjelasan:
+Checkpoint:
 
-1. `let todos` dipakai karena datanya akan berubah.
-2. `express.urlencoded()` dipakai agar form HTML bisa dibaca server.
-3. Data awal sengaja dibuat sedikit agar mudah dipahami siswa.
+1. Server bisa dijalankan.
+2. Tidak ada error di terminal.
 
-## Tahap 2: Read, Menampilkan Daftar Todo
+### Langkah 2 - READ (lihat daftar todo)
 
-Sekarang buat route untuk menampilkan semua Todo.
+Tambahkan route daftar todo:
 
 ```js
 app.get('/todo', (req, res) => {
@@ -111,7 +115,137 @@ app.get('/todo', (req, res) => {
 });
 ```
 
-Contoh `views/todo.handlebars`:
+Checkpoint:
+
+1. Buka `http://localhost:3000/todo`.
+2. Data awal todo tampil di halaman.
+
+### Langkah 3 - CREATE (tambah todo)
+
+Tambah route simpan todo baru:
+
+```js
+app.post('/todo/tambah', (req, res) => {
+	const todoBaru = {
+		id: Date.now(),
+		aktivitas: req.body.aktivitas,
+		selesai: false
+	};
+
+	todos.push(todoBaru);
+	res.redirect('/todo');
+});
+```
+
+Checkpoint:
+
+1. Isi form tambah todo.
+2. Klik Simpan Baru.
+3. Data baru muncul di daftar.
+
+### Langkah 4 - Tampilkan form EDIT
+
+Tambah route untuk membuka halaman edit:
+
+```js
+app.get('/todo/edit/:id', (req, res) => {
+	const id = Number(req.params.id);
+	const todo = todos.find((item) => item.id === id);
+
+	res.render('todo-edit', {
+		title: 'Edit Todo',
+		todo
+	});
+});
+```
+
+Checkpoint:
+
+1. Klik tombol Edit pada salah satu todo.
+2. Form edit tampil dan terisi data lama.
+
+### Langkah 5 - UPDATE (simpan edit)
+
+Tambah route simpan hasil edit:
+
+```js
+app.post('/todo/edit/:id', (req, res) => {
+	const id = Number(req.params.id);
+
+	todos = todos.map((item) => {
+		if (item.id === id) {
+			return {
+				...item,
+				aktivitas: req.body.aktivitas,
+				selesai: req.body.selesai === 'true'
+			};
+		}
+
+		return item;
+	});
+
+	res.redirect('/todo');
+});
+```
+
+Checkpoint:
+
+1. Edit teks aktivitas.
+2. Ubah status selesai/belum selesai.
+3. Data berubah saat kembali ke daftar.
+
+### Langkah 6 - DELETE (hapus todo)
+
+Tambah route hapus:
+
+```js
+app.post('/todo/hapus/:id', (req, res) => {
+	const id = Number(req.params.id);
+	todos = todos.filter((item) => item.id !== id);
+	res.redirect('/todo');
+});
+```
+
+Checkpoint:
+
+1. Klik tombol Hapus.
+2. Data hilang dari daftar.
+
+## Kunci Jawaban File Akhir
+
+## Struktur file
+
+```text
+node-web/
+|-- server.js
+|-- public/
+|   `-- css/
+|       `-- style.css
+`-- views/
+		|-- todo.handlebars
+		|-- todo-edit.handlebars
+		`-- layouts/
+				`-- main.handlebars
+```
+
+## `views/layouts/main.handlebars`
+
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>{{title}}</title>
+	<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+	{{{body}}}
+</body>
+</html>
+```
+
+## `views/todo.handlebars`
 
 ```html
 <section class="todo-page">
@@ -130,7 +264,6 @@ Contoh `views/todo.handlebars`:
 					<p>Status: {{#if this.selesai}}Selesai{{else}}Belum selesai{{/if}}</p>
 
 					<a href="/todo/edit/{{this.id}}">Edit</a>
-
 					<form action="/todo/hapus/{{this.id}}" method="POST" style="display:inline;">
 						<button type="submit">Hapus</button>
 					</form>
@@ -141,53 +274,7 @@ Contoh `views/todo.handlebars`:
 </section>
 ```
 
-Pada tahap ini siswa belajar bahwa data dari array `todos` bisa langsung ditampilkan memakai `{{#each}}`.
-
-## Tahap 3: Create, Simpan Todo Baru
-
-Sekarang kita tambahkan fitur untuk menyimpan Todo baru dari form.
-
-```js
-app.post('/todo/tambah', (req, res) => {
-	const aktivitasBaru = req.body.aktivitas;
-
-	const todoBaru = {
-		id: Date.now(),
-		aktivitas: aktivitasBaru,
-		selesai: false
-	};
-
-	todos.push(todoBaru);
-	res.redirect('/todo');
-});
-```
-
-Penjelasan sederhana:
-
-1. Ambil isi input dari form.
-2. Buat object baru.
-3. Masukkan ke array `todos`.
-4. Setelah disimpan, kembali ke halaman daftar.
-
-Inilah proses **simpan baru**.
-
-## Tahap 4: Membuat Halaman Edit
-
-Sebelum mengubah data, kita perlu menampilkan form edit.
-
-```js
-app.get('/todo/edit/:id', (req, res) => {
-	const id = Number(req.params.id);
-	const todo = todos.find((item) => item.id === id);
-
-	res.render('todo-edit', {
-		title: 'Edit Todo',
-		todo
-	});
-});
-```
-
-Contoh `views/todo-edit.handlebars`:
+## `views/todo-edit.handlebars`
 
 ```html
 <section class="todo-page">
@@ -196,12 +283,10 @@ Contoh `views/todo-edit.handlebars`:
 
 		<form action="/todo/edit/{{todo.id}}" method="POST" class="todo-form">
 			<input type="text" name="aktivitas" value="{{todo.aktivitas}}" required />
-
 			<select name="selesai">
 				<option value="false" {{#unless todo.selesai}}selected{{/unless}}>Belum selesai</option>
 				<option value="true" {{#if todo.selesai}}selected{{/if}}>Selesai</option>
 			</select>
-
 			<button type="submit">Simpan Edit</button>
 		</form>
 
@@ -210,65 +295,46 @@ Contoh `views/todo-edit.handlebars`:
 </section>
 ```
 
-Pada tahap ini siswa belajar bahwa saat tombol Edit diklik, aplikasi membuka halaman form yang sudah terisi data lama.
+## `public/css/style.css`
 
-## Tahap 5: Update, Simpan Hasil Edit
+```css
+.todo-page {
+	padding: 40px 0;
+}
 
-Sekarang kita buat proses penyimpanan hasil edit.
+.container {
+	width: 90%;
+	max-width: 900px;
+	margin: 0 auto;
+}
 
-```js
-app.post('/todo/edit/:id', (req, res) => {
-	const id = Number(req.params.id);
-	const aktivitasBaru = req.body.aktivitas;
-	const statusSelesai = req.body.selesai === 'true';
+.todo-form {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 24px;
+	flex-wrap: wrap;
+}
 
-	todos = todos.map((item) => {
-		if (item.id === id) {
-			return {
-				...item,
-				aktivitas: aktivitasBaru,
-				selesai: statusSelesai
-			};
-		}
+.todo-form input,
+.todo-form select,
+.todo-form button {
+	padding: 10px 12px;
+}
 
-		return item;
-	});
+.todo-list {
+	display: grid;
+	gap: 16px;
+}
 
-	res.redirect('/todo');
-});
+.todo-item {
+	background: #f8fafc;
+	border: 1px solid #dbe3ee;
+	border-radius: 8px;
+	padding: 16px;
+}
 ```
 
-Penjelasan:
-
-1. Ambil `id` dari URL.
-2. Ambil data baru dari form edit.
-3. Cari data yang cocok.
-4. Ganti isinya.
-5. Kembali ke daftar Todo.
-
-Inilah proses **edit lalu simpan**.
-
-## Tahap 6: Delete, Menghapus Todo
-
-Sekarang tambahkan tombol hapus.
-
-```js
-app.post('/todo/hapus/:id', (req, res) => {
-	const id = Number(req.params.id);
-	todos = todos.filter((item) => item.id !== id);
-	res.redirect('/todo');
-});
-```
-
-Penjelasan:
-
-1. Ambil `id` Todo yang ingin dihapus.
-2. Sisakan semua data selain id itu.
-3. Tampilkan ulang daftar Todo.
-
-## Gabungan Route Lengkap
-
-Supaya mudah dibaca siswa, berikut alur route lengkapnya:
+## `server.js` lengkap
 
 ```js
 const express = require('express');
@@ -277,11 +343,12 @@ const { engine } = require('express-handlebars');
 const app = express();
 const PORT = 3000;
 
-app.engine('handlebars', engine());
+app.engine('handlebars', engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
 let todos = [
 	{ id: 1, aktivitas: 'Belajar Node.js', selesai: false },
@@ -346,67 +413,8 @@ app.listen(PORT, () => {
 });
 ```
 
-## CSS Dasar Supaya Lebih Rapi
+## Hal Penting untuk Siswa
 
-```css
-.todo-page {
-	padding: 40px 0;
-}
-
-.todo-form {
-	display: flex;
-	gap: 12px;
-	margin-bottom: 24px;
-}
-
-.todo-form input,
-.todo-form select,
-.todo-form button {
-	padding: 10px 12px;
-}
-
-.todo-list {
-	display: grid;
-	gap: 16px;
-}
-
-.todo-item {
-	background: #f8fafc;
-	border: 1px solid #dbe3ee;
-	border-radius: 8px;
-	padding: 16px;
-}
-```
-
-## Urutan Mengajar yang Disarankan
-
-Supaya siswa SMA tidak bingung, pakai urutan berikut:
-
-1. Tampilkan dulu daftar Todo.
-2. Tambahkan form simpan baru.
-3. Uji tambah data.
-4. Buat tombol Edit.
-5. Buka halaman edit.
-6. Simpan hasil edit.
-7. Tambahkan tombol Hapus.
-
-Dengan cara ini, siswa melihat aplikasi berkembang sedikit demi sedikit.
-
-## Hal Penting yang Perlu Dijelaskan ke Siswa
-
-1. Data ini belum permanen karena belum disimpan ke database.
-2. Jika server dimatikan, data akan kembali ke data awal.
-3. Form HTML dipakai untuk mengirim data ke server.
-4. Handlebars dipakai untuk menampilkan data ke halaman.
-
-## Latihan Untuk Siswa
-
-1. Tambahkan field `mataPelajaran` pada Todo.
-2. Buat status Todo menjadi `Penting` atau `Biasa`.
-3. Tambahkan tombol untuk menandai Todo selesai tanpa masuk ke halaman edit.
-4. Ubah tampilan Todo yang selesai menjadi warna hijau.
-5. Urutkan Todo yang belum selesai di bagian atas.
-
-## Kesimpulan
-
-CRUD Todo adalah latihan yang sangat baik untuk siswa SMA karena alurnya sederhana dan mudah dilihat hasilnya. Dengan array object, Express, dan Handlebars, siswa bisa belajar menampilkan data, menyimpan data baru, membuka form edit, menyimpan hasil edit, dan menghapus data. Setelah paham tahap ini, barulah latihan bisa dilanjutkan ke CRUD yang memakai SQLite agar data tersimpan permanen.
+1. Data belum permanen karena masih array di memory.
+2. Saat server restart, data kembali ke awal.
+3. Tahap berikutnya adalah menyimpan data ke SQLite agar permanen.

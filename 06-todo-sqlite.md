@@ -1,64 +1,71 @@
-# 6. CRUD Todo dengan SQLite dan Handlebars
+# 6. Latihan CRUD Todo dengan SQLite dan Handlebars
 
-Pada materi sebelumnya, data Todo disimpan di array object di `server.js`.
+Pada materi sebelumnya, kita sudah membuat CRUD Todo menggunakan object dan array. Sekarang kita lanjut ke tahap yang lebih nyata, yaitu menyimpan data Todo ke **SQLite**.
 
-Cara itu bagus untuk latihan awal, tetapi ada masalah:
+SQLite cocok untuk latihan pemula karena:
 
-1. Data hilang saat server dimatikan.
-2. Data kembali ke awal saat server dijalankan lagi.
+1. Mudah dipakai.
+2. Tidak butuh server database terpisah.
+3. Datanya tersimpan di file.
+4. Sangat pas untuk belajar CRUD pertama kali.
 
-Sekarang kita lanjut ke tahap berikutnya, yaitu menyimpan data Todo ke **SQLite**.
-
-SQLite adalah database sederhana yang cocok untuk belajar karena data bisa disimpan ke file tanpa instalasi yang rumit.
+Di materi ini, siswa tetap belajar alur CRUD yang sama, tetapi data tidak lagi disimpan di array. Data akan disimpan ke tabel SQLite bernama `tb_todo`.
 
 ## Tujuan Belajar
 
 Setelah materi ini, siswa diharapkan bisa:
 
-1. Memahami perbedaan array object dan database.
-2. Membuat database SQLite sederhana.
-3. Menyimpan Todo ke database.
-4. Menampilkan data Todo dari database ke Handlebars.
-5. Mengedit dan menghapus data yang tersimpan permanen.
+1. Memahami perbedaan data di array dan data di database.
+2. Membuat tabel Todo di SQLite.
+3. Menyimpan Todo baru ke database.
+4. Menampilkan daftar Todo dari database.
+5. Mengedit Todo lalu menyimpan perubahan.
+6. Menghapus Todo dari database.
 
-## Kenapa Pindah ke SQLite?
+## Gambaran Sederhana
 
-Sebelumnya, data Todo hanya ada di dalam program.
+Kalau di materi sebelumnya todo disimpan di RAM, sekarang todo disimpan ke file database.
 
-Kalau program ditutup:
+Penjelasan paling gampang untuk anak SMA:
 
-1. Data hilang.
-2. Todo baru tidak tersimpan.
+1. Array itu seperti catatan sementara di meja.
+2. SQLite itu seperti buku catatan yang disimpan rapi di lemari.
+3. Kalau server dimatikan, buku catatan tetap ada.
+4. Karena itu data tidak hilang saat aplikasi restart.
 
-Dengan SQLite:
+Jadi, SQLite membuat data lebih aman dan lebih nyata dibanding array biasa.
 
-1. Data disimpan ke file database.
-2. Data tetap ada walaupun server dimatikan.
-3. Aplikasi menjadi lebih mirip aplikasi sungguhan.
+## Konsep Data Todo
 
-## Gambaran Alur Baru
+Contoh data todo di SQLite:
 
-```mermaid
-flowchart LR
-		A[Form Handlebars] --> B[Express]
-		B --> C[SQLite]
-		C --> B
-		B --> D[Halaman Web]
+```js
+{
+	id: 1,
+	aktivitas: 'Belajar Node.js',
+	selesai: 0
+}
 ```
+
+Penjelasan kolom:
+
+1. `id` adalah nomor unik otomatis.
+2. `aktivitas` adalah isi kegiatan.
+3. `selesai` adalah status todo, biasanya `0` untuk belum selesai dan `1` untuk selesai.
+
+Kenapa memakai angka `0` dan `1`?
+
+Karena di SQLite, nilai seperti itu sangat mudah disimpan dan dicek saat menampilkan data.
 
 ## Paket yang Digunakan
 
-Untuk materi ini, kita memakai:
+Kita tetap memakai paket yang sudah familiar:
 
 1. `express`
 2. `express-handlebars`
 3. `better-sqlite3`
 
-Kita memakai `better-sqlite3` karena penulisannya lebih sederhana untuk pemula.
-
-## Instalasi
-
-Jalankan perintah berikut:
+Instalasi:
 
 ```bash
 npm install express express-handlebars better-sqlite3
@@ -80,9 +87,37 @@ node-web/
 				`-- main.handlebars
 ```
 
-## Tahap 1: Membuka Database SQLite
+## Alur CRUD Todo
 
-Pertama, buka database di `server.js`.
+```mermaid
+flowchart TD
+	A[Buka /todo] --> B[Lihat daftar todo]
+	B --> C[Tambah todo baru]
+	C --> D[Simpan ke SQLite]
+	D --> B
+
+	B --> E[Klik Edit]
+	E --> F[Buka form edit]
+	F --> G[Ubah aktivitas dan status]
+	G --> H[Simpan edit ke SQLite]
+	H --> B
+
+	B --> I[Klik Hapus]
+	I --> J[Hapus data dari SQLite]
+	J --> B
+```
+
+## Tahap 1: Siapkan Server dan Database
+
+Pertama, kita buka database SQLite lalu membuat tabel `tb_todo`.
+
+Kapan tabel dibuat?
+
+Jawabannya: saat server pertama kali dijalankan.
+
+Ini penting supaya sebelum data dibaca atau disimpan, tempat penyimpanannya sudah siap.
+
+### Contoh Awal `server.js`
 
 ```js
 const express = require('express');
@@ -91,79 +126,60 @@ const Database = require('better-sqlite3');
 
 const app = express();
 const PORT = 3000;
-
 const db = new Database('todo.db');
 
-app.engine('handlebars', engine());
-app.set('view engine', 'handlebars');
-app.set('views', './views');
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
-```
-
-Penjelasan sederhana:
-
-1. `todo.db` adalah file tempat data disimpan.
-2. Jika file belum ada, SQLite akan membuat file itu.
-3. Semua Todo nanti disimpan di file ini.
-
-## Tahap 2: Membuat Tabel Todo
-
-Setelah database dibuka, kita buat tabel `todos`.
-
-Tabel adalah tempat menyimpan data di dalam database.
-
-Kalau database diibaratkan lemari, maka tabel adalah rak di dalam lemari.
-
-```js
-db.prepare(`
-	CREATE TABLE IF NOT EXISTS todos (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		aktivitas TEXT NOT NULL,
-		selesai INTEGER NOT NULL DEFAULT 0
-	)
-`).run();
-```
-
-### Kode Ini Ditulis di Mana?
-
-Kode ini ditulis di file `server.js`.
-
-Letaknya:
-
-1. Setelah koneksi database dibuat.
-2. Sebelum route seperti `/todo` ditulis.
-
-Contoh urutannya seperti ini:
-
-```js
-const express = require('express');
-const { engine } = require('express-handlebars');
-const Database = require('better-sqlite3');
-
-const app = express();
-const PORT = 3000;
-
-const db = new Database('todo.db');
-
-app.engine('handlebars', engine());
+app.engine('handlebars', engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-db.prepare(`
-	CREATE TABLE IF NOT EXISTS todos (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		aktivitas TEXT NOT NULL,
-		selesai INTEGER NOT NULL DEFAULT 0
-	)
-`).run();
+function createTable() {
+	const query = `
+		CREATE TABLE IF NOT EXISTS tb_todo (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			aktivitas TEXT NOT NULL,
+			selesai INTEGER DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`;
 
+	db.prepare(query).run();
+}
+
+createTable();
+```
+
+### Penjelasan Tabel
+
+1. `id` adalah nomor otomatis.
+2. `aktivitas` adalah isi todo.
+3. `selesai` menyimpan status selesai atau belum.
+4. `created_at` mencatat waktu data dibuat.
+5. `updated_at` mencatat waktu data diubah.
+
+### Kenapa Ada `IF NOT EXISTS`?
+
+Karena kita tidak ingin error kalau tabel sudah ada.
+
+Artinya:
+
+1. Kalau tabel belum ada, SQLite membuat tabel.
+2. Kalau tabel sudah ada, SQLite tidak membuat ulang.
+
+Ini membuat aplikasi lebih aman untuk pemula.
+
+## Tahap 2: READ - Menampilkan Daftar Todo
+
+Langkah pertama di CRUD biasanya adalah menampilkan data.
+
+Route untuk melihat todo:
+
+```js
 app.get('/todo', (req, res) => {
-	const todos = db.prepare('SELECT * FROM todos ORDER BY id DESC').all();
+	const todos = db.prepare('SELECT * FROM tb_todo ORDER BY id DESC').all();
 
 	res.render('todo', {
 		title: 'Daftar Todo',
@@ -172,43 +188,168 @@ app.get('/todo', (req, res) => {
 });
 ```
 
-Jadi, urutannya mudah diingat:
+### Penjelasan untuk Siswa
 
-1. Buka database.
-2. Buat tabel.
-3. Baru pakai tabel itu di route.
+1. `SELECT *` artinya ambil semua data.
+2. `ORDER BY id DESC` artinya data terbaru tampil di atas.
+3. `.all()` dipakai karena kita ingin mengambil banyak data.
+4. Data hasil query dikirim ke halaman Handlebars.
 
-Kalau ditaruh setelah route, siswa biasanya bingung karena aplikasi mencoba memakai tabel sebelum tabel itu dijelaskan.
+Checkpoint:
 
-Penjelasan kolom:
+1. Buka `http://localhost:3000/todo`.
+2. Data todo tampil di halaman.
 
-1. `id` adalah nomor unik otomatis.
-2. `aktivitas` berisi teks kegiatan.
-3. `selesai` bernilai `0` atau `1`.
+## Tahap 3: CREATE - Menambah Todo Baru
 
-Di SQLite, data benar atau salah biasanya disimpan sebagai angka:
-
-1. `0` = belum selesai
-2. `1` = selesai
-
-## Tahap 3: Read, Menampilkan Data Todo dari Database
-
-Sekarang route `/todo` tidak lagi membaca array object.
-
-Sekarang data dibaca dari tabel `todos` di SQLite.
+Sekarang kita simpan data baru ke SQLite.
 
 ```js
-app.get('/todo', (req, res) => {
-	const todos = db.prepare('SELECT * FROM todos ORDER BY id DESC').all();
+app.post('/todo/tambah', (req, res) => {
+	const query = `
+		INSERT INTO tb_todo (aktivitas, selesai)
+		VALUES (?, ?)
+	`;
 
-	res.render('todo', {
-		title: 'Daftar Todo',
-		todos
+	db.prepare(query).run(req.body.aktivitas, 0);
+
+	res.redirect('/todo');
+});
+```
+
+### Penjelasan Sederhana
+
+1. Form mengirim `aktivitas`.
+2. Kita simpan ke database dengan `INSERT`.
+3. Nilai `selesai` diisi `0` karena todo baru pasti belum selesai.
+4. Setelah disimpan, halaman diarahkan kembali ke daftar todo.
+
+Checkpoint:
+
+1. Isi form tambah todo.
+2. Klik Simpan Baru.
+3. Data baru muncul di daftar.
+
+## Tahap 4: Tampilkan Form Edit
+
+Sebelum data diubah, kita perlu membuka data lama dulu.
+
+```js
+app.get('/todo/edit/:id', (req, res) => {
+	const id = Number(req.params.id);
+	const todo = db.prepare('SELECT * FROM tb_todo WHERE id = ?').get(id);
+
+	res.render('todo-edit', {
+		title: 'Edit Todo',
+		todo
 	});
 });
 ```
 
-Contoh `views/todo.handlebars`:
+### Penjelasan Sederhana
+
+1. `:id` artinya kita mengambil id dari URL.
+2. `.get()` dipakai karena kita hanya mencari satu data.
+3. Data todo lama dikirim ke halaman edit supaya form terisi otomatis.
+
+Checkpoint:
+
+1. Klik tombol Edit pada salah satu todo.
+2. Form edit tampil dan sudah terisi data lama.
+
+## Tahap 5: UPDATE - Menyimpan Hasil Edit
+
+Sekarang kita ubah isi todo di database.
+
+```js
+app.post('/todo/edit/:id', (req, res) => {
+	const id = Number(req.params.id);
+	const selesai = req.body.selesai === '1' ? 1 : 0;
+
+	const query = `
+		UPDATE tb_todo
+		SET aktivitas = ?, selesai = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`;
+
+	db.prepare(query).run(req.body.aktivitas, selesai, id);
+
+	res.redirect('/todo');
+});
+```
+
+### Penjelasan Sederhana
+
+1. `UPDATE` dipakai untuk mengubah data yang sudah ada.
+2. `WHERE id = ?` memastikan hanya todo dengan id itu yang berubah.
+3. `updated_at` diisi ulang agar waktu perubahan tercatat.
+4. Status selesai diubah menjadi `0` atau `1`.
+
+Checkpoint:
+
+1. Edit teks aktivitas.
+2. Ubah status selesai.
+3. Data berubah saat kembali ke daftar.
+
+## Tahap 6: DELETE - Menghapus Todo
+
+Kalau todo sudah tidak diperlukan, kita hapus dari database.
+
+```js
+app.post('/todo/hapus/:id', (req, res) => {
+	const id = Number(req.params.id);
+	db.prepare('DELETE FROM tb_todo WHERE id = ?').run(id);
+	res.redirect('/todo');
+});
+```
+
+### Penjelasan Sederhana
+
+1. `DELETE` dipakai untuk menghapus data.
+2. `WHERE id = ?` memastikan yang terhapus hanya todo yang dipilih.
+3. Setelah dihapus, halaman kembali ke daftar.
+
+Checkpoint:
+
+1. Klik tombol Hapus.
+2. Data hilang dari daftar.
+
+## Kunci Jawaban File Akhir
+
+## Struktur file
+
+```text
+node-web/
+|-- server.js
+|-- todo.db
+|-- public/
+|   `-- css/
+|       `-- style.css
+`-- views/
+		|-- todo.handlebars
+		|-- todo-edit.handlebars
+		`-- layouts/
+				`-- main.handlebars
+```
+
+## `views/layouts/main.handlebars`
+
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>{{title}}</title>
+	<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+	{{{body}}}
+</body>
+</html>
+```
+
+## `views/todo.handlebars`
 
 ```html
 <section class="todo-page">
@@ -222,12 +363,11 @@ Contoh `views/todo.handlebars`:
 
 		<div class="todo-list">
 			{{#each todos}}
-				<div class="todo-item">
+				<div class="todo-item {{#if this.selesai}}done{{/if}}">
 					<h3>{{this.aktivitas}}</h3>
 					<p>Status: {{#if this.selesai}}Selesai{{else}}Belum selesai{{/if}}</p>
 
 					<a href="/todo/edit/{{this.id}}">Edit</a>
-
 					<form action="/todo/hapus/{{this.id}}" method="POST" style="display:inline;">
 						<button type="submit">Hapus</button>
 					</form>
@@ -238,47 +378,7 @@ Contoh `views/todo.handlebars`:
 </section>
 ```
 
-## Tahap 4: Create, Simpan Todo Baru ke SQLite
-
-Sekarang tombol simpan baru akan menyimpan data ke database.
-
-```js
-app.post('/todo/tambah', (req, res) => {
-	const aktivitasBaru = req.body.aktivitas;
-
-	db.prepare('INSERT INTO todos (aktivitas, selesai) VALUES (?, ?)')
-		.run(aktivitasBaru, 0);
-
-	res.redirect('/todo');
-});
-```
-
-Penjelasan:
-
-1. Ambil input dari form.
-2. Jalankan perintah `INSERT`.
-3. Simpan ke tabel `todos`.
-4. Kembali ke daftar.
-
-Ini adalah proses **simpan baru** dengan SQLite.
-
-## Tahap 5: Menampilkan Form Edit
-
-Saat tombol Edit diklik, aplikasi mengambil satu data Todo berdasarkan `id`.
-
-```js
-app.get('/todo/edit/:id', (req, res) => {
-	const id = Number(req.params.id);
-	const todo = db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
-
-	res.render('todo-edit', {
-		title: 'Edit Todo',
-		todo
-	});
-});
-```
-
-Contoh `views/todo-edit.handlebars`:
+## `views/todo-edit.handlebars`
 
 ```html
 <section class="todo-page">
@@ -287,12 +387,10 @@ Contoh `views/todo-edit.handlebars`:
 
 		<form action="/todo/edit/{{todo.id}}" method="POST" class="todo-form">
 			<input type="text" name="aktivitas" value="{{todo.aktivitas}}" required />
-
 			<select name="selesai">
 				<option value="0" {{#unless todo.selesai}}selected{{/unless}}>Belum selesai</option>
 				<option value="1" {{#if todo.selesai}}selected{{/if}}>Selesai</option>
 			</select>
-
 			<button type="submit">Simpan Edit</button>
 		</form>
 
@@ -301,69 +399,82 @@ Contoh `views/todo-edit.handlebars`:
 </section>
 ```
 
-## Tahap 6: Update, Simpan Hasil Edit ke SQLite
+## `public/css/style.css`
 
-Setelah form edit diisi, hasilnya disimpan ke database.
+```css
+.todo-page {
+	padding: 40px 0;
+	background: #f8fafc;
+	min-height: 100vh;
+}
 
-```js
-app.post('/todo/edit/:id', (req, res) => {
-	const id = Number(req.params.id);
-	const aktivitasBaru = req.body.aktivitas;
-	const statusSelesai = Number(req.body.selesai);
+.container {
+	width: min(900px, 92%);
+	margin: 0 auto;
+}
 
-	db.prepare('UPDATE todos SET aktivitas = ?, selesai = ? WHERE id = ?')
-		.run(aktivitasBaru, statusSelesai, id);
+h1 {
+	margin-top: 0;
+	color: #0f172a;
+}
 
-	res.redirect('/todo');
-});
+.todo-form {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 24px;
+	flex-wrap: wrap;
+}
+
+.todo-form input,
+.todo-form select,
+.todo-form button {
+	padding: 10px 12px;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	font-size: 15px;
+}
+
+.todo-form input,
+.todo-form select {
+	flex: 1;
+}
+
+.todo-form button {
+	background: #0f766e;
+	color: #fff;
+	cursor: pointer;
+}
+
+.todo-list {
+	display: grid;
+	gap: 16px;
+}
+
+.todo-item {
+	background: #ffffff;
+	border: 1px solid #dbe3ee;
+	border-radius: 12px;
+	padding: 16px;
+	box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.todo-item.done {
+	border-color: #86efac;
+	background: #f0fdf4;
+}
+
+.todo-item h3 {
+	margin-top: 0;
+	margin-bottom: 8px;
+}
+
+.todo-item a,
+.todo-item button {
+	margin-right: 8px;
+}
 ```
 
-Penjelasan:
-
-1. Ambil `id` dari URL.
-2. Ambil data baru dari form.
-3. Jalankan perintah `UPDATE`.
-4. Kembali ke halaman daftar.
-
-Ini adalah proses **edit lalu simpan** dengan SQLite.
-
-## Tahap 7: Delete, Menghapus Todo dari SQLite
-
-Sekarang tombol Hapus benar-benar menghapus data dari database.
-
-```js
-app.post('/todo/hapus/:id', (req, res) => {
-	const id = Number(req.params.id);
-
-	db.prepare('DELETE FROM todos WHERE id = ?').run(id);
-
-	res.redirect('/todo');
-});
-```
-
-## Kapan Tabel Dibuat?
-
-Bagian membuat tabel dijalankan saat server pertama kali dinyalakan.
-
-Saat kita menjalankan:
-
-```bash
-node server.js
-```
-
-Node akan membaca file `server.js` dari atas ke bawah.
-
-Urutannya seperti ini:
-
-1. Import package.
-2. Buka database.
-3. Buat tabel jika belum ada.
-4. Jalankan route.
-5. Server siap menerima request.
-
-Jadi, tabel harus dibuat lebih dulu sebelum data dibaca atau disimpan.
-
-## Gabungan `server.js` Lengkap
+## `server.js` Lengkap
 
 ```js
 const express = require('express');
@@ -372,26 +483,33 @@ const Database = require('better-sqlite3');
 
 const app = express();
 const PORT = 3000;
-
 const db = new Database('todo.db');
 
-app.engine('handlebars', engine());
+app.engine('handlebars', engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-db.prepare(`
-	CREATE TABLE IF NOT EXISTS todos (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		aktivitas TEXT NOT NULL,
-		selesai INTEGER NOT NULL DEFAULT 0
-	)
-`).run();
+function createTable() {
+	const query = `
+		CREATE TABLE IF NOT EXISTS tb_todo (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			aktivitas TEXT NOT NULL,
+			selesai INTEGER DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`;
+
+	db.prepare(query).run();
+}
+
+createTable();
 
 app.get('/todo', (req, res) => {
-	const todos = db.prepare('SELECT * FROM todos ORDER BY id DESC').all();
+	const todos = db.prepare('SELECT * FROM tb_todo ORDER BY id DESC').all();
 
 	res.render('todo', {
 		title: 'Daftar Todo',
@@ -400,15 +518,19 @@ app.get('/todo', (req, res) => {
 });
 
 app.post('/todo/tambah', (req, res) => {
-	db.prepare('INSERT INTO todos (aktivitas, selesai) VALUES (?, ?)')
-		.run(req.body.aktivitas, 0);
+	const query = `
+		INSERT INTO tb_todo (aktivitas, selesai)
+		VALUES (?, ?)
+	`;
+
+	db.prepare(query).run(req.body.aktivitas, 0);
 
 	res.redirect('/todo');
 });
 
 app.get('/todo/edit/:id', (req, res) => {
 	const id = Number(req.params.id);
-	const todo = db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
+	const todo = db.prepare('SELECT * FROM tb_todo WHERE id = ?').get(id);
 
 	res.render('todo-edit', {
 		title: 'Edit Todo',
@@ -418,16 +540,22 @@ app.get('/todo/edit/:id', (req, res) => {
 
 app.post('/todo/edit/:id', (req, res) => {
 	const id = Number(req.params.id);
+	const selesai = req.body.selesai === '1' ? 1 : 0;
 
-	db.prepare('UPDATE todos SET aktivitas = ?, selesai = ? WHERE id = ?')
-		.run(req.body.aktivitas, Number(req.body.selesai), id);
+	const query = `
+		UPDATE tb_todo
+		SET aktivitas = ?, selesai = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`;
+
+	db.prepare(query).run(req.body.aktivitas, selesai, id);
 
 	res.redirect('/todo');
 });
 
 app.post('/todo/hapus/:id', (req, res) => {
 	const id = Number(req.params.id);
-	db.prepare('DELETE FROM todos WHERE id = ?').run(id);
+	db.prepare('DELETE FROM tb_todo WHERE id = ?').run(id);
 	res.redirect('/todo');
 });
 
@@ -436,90 +564,18 @@ app.listen(PORT, () => {
 });
 ```
 
-## CSS Dasar
+## Hal Penting untuk Siswa
 
-Jika masih memakai CSS dari materi sebelumnya, itu sudah cukup. Contoh sederhananya:
+1. Data sekarang tersimpan permanen di file `todo.db`.
+2. Saat server restart, data tetap ada.
+3. SQLite lebih cocok untuk aplikasi kecil, latihan, dan project belajar.
+4. Setelah ini, siswa bisa lanjut belajar relasi tabel atau fitur berita yang lebih kompleks.
 
-```css
-.todo-page {
-	padding: 40px 0;
-}
+## Ringkasan Singkat
 
-.todo-form {
-	display: flex;
-	gap: 12px;
-	margin-bottom: 24px;
-}
+1. `READ` dipakai untuk melihat data.
+2. `CREATE` dipakai untuk menambah data.
+3. `UPDATE` dipakai untuk mengubah data.
+4. `DELETE` dipakai untuk menghapus data.
 
-.todo-form input,
-.todo-form select,
-.todo-form button {
-	padding: 10px 12px;
-}
-
-.todo-list {
-	display: grid;
-	gap: 16px;
-}
-
-.todo-item {
-	background: #f8fafc;
-	border: 1px solid #dbe3ee;
-	border-radius: 8px;
-	padding: 16px;
-}
-```
-
-## Perbedaan dengan Materi Sebelumnya
-
-Sebelumnya:
-
-1. Data disimpan di array `todos`.
-2. Data hilang saat server mati.
-
-Sekarang:
-
-1. Data disimpan di `todo.db`.
-2. Data tetap ada walaupun server dimatikan.
-3. Kita memakai SQL untuk membaca dan mengubah data.
-
-## Urutan Mengajar yang Disarankan
-
-Supaya siswa SMA lebih mudah mengikuti, ajarkan dalam urutan ini:
-
-1. Jelaskan dulu kenapa array object belum cukup.
-2. Kenalkan SQLite sebagai tempat penyimpanan permanen.
-3. Buat tabel `todos`.
-4. Tampilkan data dari database.
-5. Simpan Todo baru.
-6. Edit dan simpan perubahan.
-7. Hapus data.
-
-## Hal Penting Untuk Dijelaskan ke Siswa
-
-1. Database adalah tempat menyimpan data.
-2. SQLite menyimpan data dalam satu file.
-3. SQL adalah perintah untuk membaca dan mengubah data.
-4. Handlebars tetap dipakai untuk menampilkan data ke halaman.
-
-## Ringkasan Sangat Sederhana
-
-Kalau ingin dijelaskan dengan sangat singkat ke siswa, gunakan kalimat ini:
-
-1. Form mengirim data ke Express.
-2. Express menyimpan data ke SQLite.
-3. SQLite menyimpan data di file.
-4. Express mengambil data dari SQLite.
-5. Handlebars menampilkan data ke browser.
-
-## Latihan Untuk Siswa
-
-1. Tambahkan kolom `kategori` pada tabel Todo.
-2. Tampilkan kategori di halaman daftar.
-3. Tambahkan filter Todo selesai dan belum selesai.
-4. Tambahkan tanggal pembuatan Todo.
-5. Buat tampilan warna berbeda untuk status selesai.
-
-## Kesimpulan
-
-Dengan SQLite, aplikasi Todo menjadi lebih nyata karena data tidak lagi hilang saat server dimatikan. Alur CRUD tetap sama seperti sebelumnya, hanya tempat penyimpanannya pindah dari array object ke database. Ini penting agar siswa memahami bahwa aplikasi web tidak hanya menampilkan data, tetapi juga menyimpan data secara permanen.
+Kalau siswa sudah paham materi ini, berarti mereka sudah memahami dasar CRUD database dengan sangat baik.

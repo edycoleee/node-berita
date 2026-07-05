@@ -1,0 +1,53 @@
+@baseUrl = http://localhost:3000
+
+### Root
+GET {{baseUrl}}/
+
+### Public landing
+GET {{baseUrl}}/api/public/landing
+
+### Public list news
+GET {{baseUrl}}/api/public/news
+
+### Public detail by slug
+GET {{baseUrl}}/api/public/news/workshop-penelitian-2026
+
+### Login superadmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "superadmin",
+  "password": "superadmin123"
+}
+
+### Me (ganti TOKEN)
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer TOKEN
+
+### CMS ping tanpa token (harus 401)
+GET {{baseUrl}}/api/cms/ping
+
+### CMS ping pakai token
+GET {{baseUrl}}/api/cms/ping
+Authorization: Bearer TOKEN
+
+### Create news (admin/editor)
+POST {{baseUrl}}/api/cms/news
+Authorization: Bearer TOKEN
+Content-Type: application/json
+
+{
+  "title": "Judul dari REST Client",
+  "content": "Isi berita dari REST Client",
+  "slug": "judul-dari-rest-client-01",
+  "status": "draft"
+}
+
+### Delete news (admin only)
+DELETE {{baseUrl}}/api/cms/news/1
+Authorization: Bearer TOKEN
+
+### Admin only users list
+GET {{baseUrl}}/api/cms/users
+Authorization: Bearer TOKEN

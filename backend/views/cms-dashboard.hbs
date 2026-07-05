@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard CMS</title>
+  </head>
+  <body>
+    <h1>Dashboard CMS</h1>
+    <p>Halo, {{user.full_name}} ({{user.role}})</p>
+
+    <ul>
+      <li><a href="/cms/hero">Kelola Hero (tahap berikutnya)</a></li>
+      <li><a href="/cms/news">Kelola Berita (tahap berikutnya)</a></li>
+    </ul>
+
+    <form method="POST" action="/cms/logout">
+      <button type="submit">Logout CMS</button>
+    </form>
+
+    <p><a href="/">Kembali ke Landing</a></p>
+  </body>
+</html>

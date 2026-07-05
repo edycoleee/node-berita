@@ -38,6 +38,10 @@ Siswa punya halaman dan route berikut:
 4. GET /cms/dashboard -> dashboard CMS (wajib login)
 5. POST /cms/logout -> logout session
 
+Tambahan endpoint yang tetap dipakai untuk cek backend:
+
+1. GET /api -> ringkasan route API
+
 ## Peta Alur
 
 ```mermaid
@@ -57,20 +61,37 @@ flowchart LR
 backend/
 ├── app.js
 ├── server.js
+├── tests/
+│   └── cms-page.test.js (opsional)
 ├── views/
 │   ├── landing.hbs
 │   ├── cms-login.hbs
 │   └── cms-dashboard.hbs
 ├── routes/
 │   └── cms-page.js
-└── middleware/
-		└── require-page-auth.js
+├── middleware/
+│   └── require-page-auth.js
+└── test-09e-awal.http (opsional)
 ```
 
 Catatan:
 
 1. Ini tahap halaman sederhana dulu, bukan web publik penuh.
 2. Data website lengkap nanti dibuka di modul CRUD dan integrasi frontend.
+
+## Rencana Mengajar Singkat (Saran)
+
+Pertemuan 1:
+
+1. Buat landing sederhana + navbar Login CMS.
+2. Buat halaman login CMS.
+3. Pastikan login gagal/sukses berjalan.
+
+Pertemuan 2:
+
+1. Buat dashboard CMS (protected page).
+2. Tambahkan logout CMS.
+3. Uji alur penuh dari landing sampai logout.
 
 ## Tahap 1 - Setup View Engine
 
@@ -299,6 +320,98 @@ views/cms-dashboard.hbs
 </html>
 ```
 
+## Tahap 6 - Uji Manual dengan Browser
+
+Urutan uji cepat:
+
+1. Buka / -> tampil landing + tombol Login CMS.
+2. Klik Login CMS -> masuk /cms/login.
+3. Isi kredensial salah -> tetap di /cms/login dengan pesan error.
+4. Isi kredensial benar -> redirect ke /cms/dashboard.
+5. Buka tab baru dan akses /cms/dashboard -> tetap boleh (session aktif).
+6. Klik Logout CMS -> kembali ke /.
+7. Coba lagi akses /cms/dashboard -> redirect ke /cms/login.
+
+## Tahap 7 - Opsional REST File untuk API Pendukung
+
+Buat test-09e-awal.http jika ingin cek API tetap sehat:
+
+```http
+@baseUrl = http://localhost:3000
+
+### Cek landing page
+GET {{baseUrl}}/
+
+### Cek ringkasan API
+GET {{baseUrl}}/api
+
+### Cek public API masih aktif
+GET {{baseUrl}}/api/public/landing
+```
+
+Catatan:
+
+1. Endpoint halaman CMS login/dashboard/logout lebih mudah diuji lewat browser.
+2. Untuk uji otomatis, gunakan unit test supertest agent seperti contoh di tahap berikut.
+
+## Tahap 8 - Opsional Unit Test Alur Halaman CMS
+
+Install jika belum:
+
+```bash
+npm install -D vitest supertest
+```
+
+Contoh file tests/cms-page.test.js:
+
+```js
+const request = require('supertest');
+const app = require('../app');
+
+describe('CMS Page Flow', () => {
+	it('GET / harus tampil landing sederhana', async () => {
+		const res = await request(app).get('/');
+		expect(res.status).toBe(200);
+		expect(res.text).toContain('Landing Sederhana');
+	});
+
+	it('GET /cms/dashboard tanpa login harus redirect ke /cms/login', async () => {
+		const res = await request(app).get('/cms/dashboard');
+		expect(res.status).toBe(302);
+		expect(res.headers.location).toBe('/cms/login');
+	});
+
+	it('login benar lalu dashboard bisa diakses', async () => {
+		const agent = request.agent(app);
+
+		const loginRes = await agent.post('/cms/login').type('form').send({
+			username: 'superadmin',
+			password: 'superadmin123'
+		});
+
+		expect(loginRes.status).toBe(302);
+		expect(loginRes.headers.location).toBe('/cms/dashboard');
+
+		const dashboardRes = await agent.get('/cms/dashboard');
+		expect(dashboardRes.status).toBe(200);
+		expect(dashboardRes.text).toContain('Dashboard CMS');
+	});
+});
+```
+
+Kalau project CommonJS pakai Vitest, pastikan script test:
+
+```json
+"test": "vitest run --globals"
+```
+
+## Tahap 9 - Troubleshooting Cepat
+
+1. Error "Cannot GET /cms/login": cek app sudah memakai route cms-page.
+2. Selalu balik ke login meski password benar: cek session middleware dipasang sebelum route cms-page.
+3. Login selalu gagal: cek data user di tabel users dan pastikan password_hash memang bcrypt valid.
+4. Dashboard kosong atau nama user undefined: cek data user disimpan ke req.session.user saat login.
+
 ## Checklist Uji Siswa
 
 1. Buka / -> terlihat tombol Login CMS.
@@ -307,6 +420,12 @@ views/cms-dashboard.hbs
 4. Login benar -> masuk dashboard.
 5. Akses /cms/dashboard tanpa login -> diarahkan ke /cms/login.
 6. Klik Logout -> kembali ke landing dan session hilang.
+
+Checklist tambahan (guru):
+
+1. GET /api tetap normal setelah penambahan halaman.
+2. GET /api/public/landing tetap normal.
+3. Tidak ada konflik route antara halaman dan route API.
 
 ## Penutup Tahap 09E-Awal
 

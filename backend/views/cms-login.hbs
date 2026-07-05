@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login CMS</title>
+  </head>
+  <body>
+    <h1>Login CMS</h1>
+
+    {{#if error}}
+      <p style="color:red;">{{error}}</p>
+    {{/if}}
+
+    <form method="POST" action="/cms/login">
+      <p>
+        <label>Username</label><br />
+        <input name="username" type="text" required />
+      </p>
+      <p>
+        <label>Password</label><br />
+        <input name="password" type="password" required />
+      </p>
+      <button type="submit">Masuk</button>
+    </form>
+
+    <p><a href="/">Kembali ke Landing</a></p>
+  </body>
+</html>

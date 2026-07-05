@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Landing Sederhana</title>
+  </head>
+  <body>
+    <nav style="display:flex;justify-content:space-between;align-items:center;">
+      <h3>Website Lembaga</h3>
+      {{#if user}}
+        <a href="/cms/dashboard">Ke Dashboard CMS</a>
+      {{else}}
+        <a href="/cms/login">Login CMS</a>
+      {{/if}}
+    </nav>
+
+    <hr />
+    <h1>Landing Sederhana</h1>
+    <p>Ini halaman publik awal sebelum integrasi data website penuh.</p>
+  </body>
+</html>

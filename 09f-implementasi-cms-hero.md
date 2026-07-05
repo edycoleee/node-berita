@@ -1,10 +1,15 @@
-# 8E. Implementasi CMS Hero Bertahap (CRUD + Proteksi Auth Role)
+# 09E. Implementasi CMS Hero Bertahap (CRUD + Proteksi Auth Role)
 
 Dokumen ini lanjutan dari:
 
-1. [08c-implementasi-auth-api.md](08c-implementasi-auth-api.md)
-2. [08b-desain-api.md](08b-desain-api.md)
-3. [08a-desain-db.md](08a-desain-db.md)
+1. [09d-implementasi-auth-api.md](09d-implementasi-auth-api.md)
+2. [09c-desain-api.md](09c-desain-api.md)
+3. [09a-desain-db.md](09a-desain-db.md)
+
+Posisi materi 09e:
+
+1. 09d menutup alur auth dan transisi UI sederhana (landing, login cms, dashboard, logout).
+2. 09e melanjutkan dari dashboard CMS untuk mulai CRUD modul pertama: hero slides.
 
 Fokus dokumen:
 
@@ -42,8 +47,22 @@ Wajib sudah ada di server:
 2. `requireAuth`
 3. `requireRole(...roles)`
 4. Endpoint login untuk testing
+5. Alur halaman transisi sudah ada: landing sederhana -> login cms -> dashboard cms -> logout
 
-Kalau belum, selesaikan dulu [08c-implementasi-auth-api.md](08c-implementasi-auth-api.md).
+Kalau belum, selesaikan dulu [09d-implementasi-auth-api.md](09d-implementasi-auth-api.md).
+
+## Tahap 1A - Sambungkan Hero ke Dashboard CMS
+
+Sebelum membuat endpoint CRUD, pastikan dashboard CMS sudah punya menu menuju modul hero.
+
+Contoh alur minimal:
+
+1. User login dari halaman `/cms/login`.
+2. User masuk `/cms/dashboard`.
+3. Di dashboard ada link tombol ke `/cms/hero`.
+4. Halaman `/cms/hero` menampilkan daftar hero dari endpoint CMS.
+
+Dengan cara ini, siswa paham bahwa CRUD hero adalah kelanjutan langsung dari dashboard, bukan fitur terpisah.
 
 ## Tahap 2 - Buat Tabel `hero_slides`
 
@@ -334,7 +353,7 @@ Urutan uji kelas yang mudah:
 
 ## Contoh Mini server.js (Auth + CMS Hero)
 
-Contoh ini fokus endpoint inti CMS hero dan asumsi auth dari 08C sudah terpasang:
+Contoh ini fokus endpoint inti CMS hero dan asumsi auth dari 09d sudah terpasang:
 
 ```js
 const express = require('express');

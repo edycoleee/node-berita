@@ -340,6 +340,33 @@ Urutan uji yang disarankan:
 5. Login sebagai admin -> akses admin-only boleh
 6. Logout -> endpoint CMS kembali 401
 
+## Tahap 11 - Transisi UI: Landing Sederhana + Dashboard CMS
+
+Sebelum masuk modul CRUD CMS (hero, berita, video, menu, settings), buat dulu alur UI sederhana agar siswa paham arah aplikasi.
+
+Target tahap transisi:
+
+1. Halaman landing sederhana untuk publik.
+2. Navbar atas punya tombol Login CMS.
+3. Setelah login sukses, user masuk halaman Dashboard CMS.
+4. Dashboard CMS punya tombol Logout.
+
+Kenapa tahap ini penting?
+
+1. Alur auth jadi terlihat nyata, tidak hanya API.
+2. Saat masuk materi CRUD, siswa sudah paham "data dikelola dari dashboard".
+3. Materi 09e dan seterusnya terasa nyambung, bukan loncat konteks.
+
+Urutan rute minimal yang disarankan:
+
+1. `GET /` -> landing sederhana.
+2. `GET /cms/login` -> form login.
+3. `POST /cms/login` -> proses login session.
+4. `GET /cms/dashboard` -> halaman dashboard (protected).
+5. `POST /cms/logout` -> logout dan kembali ke landing.
+
+Setelah tahap 11 selesai, lanjut ke modul CRUD pada [09e-implementasi-cms-hero.md](09e-implementasi-cms-hero.md).
+
 ## Contoh Lengkap server.js (Ringkas)
 
 Jika siswa ingin melihat gabungan semua tahap, pakai contoh ini:
@@ -478,9 +505,12 @@ app.listen(PORT, () => {
 2. Middleware requireAuth mengecek sudah login atau belum.
 3. Middleware requireRole mengecek hak akses role.
 4. Logout menghapus session, jadi akses CMS tertutup lagi.
+5. Setelah auth beres, buat dulu landing sederhana + dashboard CMS agar modul CRUD lebih nyambung.
 
 Kalimat kunci siswa:
 
 Session = tanda masuk.
 Auth = cek sudah masuk.
 Role = cek boleh masuk ruangan mana.
+
+

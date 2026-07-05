@@ -1,9 +1,14 @@
-# 8C. Implementasi Auth API Bertahap (Siap Copy-Paste)
+# 09D. Implementasi Auth API Bertahap (Session-Based, Siap Copy-Paste)
 
 Dokumen ini adalah lanjutan dari:
 
-1. [08b-desain-api.md](08b-desain-api.md)
-2. [08b-auth-flow.md](08b-auth-flow.md)
+1. [09c-desain-api.md](09c-desain-api.md)
+2. [09b-auth-flow.md](09b-auth-flow.md)
+
+Posisi materi 09d:
+
+1. 09d fokus pada auth berbasis session agar konsep dasar mudah dipahami siswa.
+2. 09c fokus standar API yang lebih production-style (error seragam, logger, struktur folder, unit test).
 
 Target dokumen ini:
 
@@ -31,7 +36,8 @@ Urutan belajar yang dipakai:
 Jalankan:
 
 ```bash
-npm install express better-sqlite3 express-session bcryptjs
+npm install express better-sqlite3 express-session bcryptjs dotenv
+npm install -D nodemon
 ```
 
 Fungsi paket:
@@ -40,6 +46,14 @@ Fungsi paket:
 2. better-sqlite3: akses SQLite
 3. express-session: simpan login state
 4. bcryptjs: hash dan cek password
+5. dotenv: membaca konfigurasi aman dari file .env
+
+Tambahkan file .env sederhana:
+
+```env
+PORT=3000
+SESSION_SECRET=session-rahasia-untuk-belajar
+```
 
 ## Tahap 2 - Buat Server Dasar
 
@@ -95,20 +109,19 @@ db.exec(`
 Seed admin awal (sekali saja):
 
 ```js
-const adminExists = db
-  .prepare('SELECT id FROM users WHERE username = ? LIMIT 1')
-  .get('admin');
+const hash = bcrypt.hashSync('admin123', 10);
+db.prepare(
+  `INSERT OR IGNORE INTO users (username, password_hash, full_name, role, is_active)
+   VALUES (?, ?, ?, ?, ?)`
+).run('admin', hash, 'Administrator', 'admin', 1);
 
-if (!adminExists) {
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare(
-    `INSERT INTO users (username, password_hash, full_name, role, is_active)
-     VALUES (?, ?, ?, ?, ?)`
-  ).run('admin', hash, 'Administrator', 'admin', 1);
-
-  console.log('Seed admin dibuat: username=admin, password=admin123');
-}
+console.log('Seed admin dipastikan ada: username=admin, password=admin123');
 ```
+
+Kenapa pakai INSERT OR IGNORE?
+
+1. Aman saat server restart berulang.
+2. Mencegah error duplikasi username.
 
 Cek:
 
@@ -124,7 +137,7 @@ const session = require('express-session');
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'ganti-secret-lokal',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -139,6 +152,7 @@ Catatan untuk siswa:
 
 1. Session menyimpan status login di server.
 2. Browser hanya pegang id session lewat cookie.
+3. Secret session sebaiknya disimpan di .env, bukan hardcoded di kode.
 
 ## Tahap 5 - Buat Middleware Auth dan Role
 
@@ -335,6 +349,7 @@ const express = require('express');
 const session = require('express-session');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
@@ -368,17 +383,11 @@ db.exec(`
   )
 `);
 
-const adminExists = db
-  .prepare('SELECT id FROM users WHERE username = ? LIMIT 1')
-  .get('admin');
-
-if (!adminExists) {
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare(
-    `INSERT INTO users (username, password_hash, full_name, role, is_active)
-     VALUES (?, ?, ?, ?, ?)`
-  ).run('admin', hash, 'Administrator', 'admin', 1);
-}
+const hash = bcrypt.hashSync('admin123', 10);
+db.prepare(
+  `INSERT OR IGNORE INTO users (username, password_hash, full_name, role, is_active)
+   VALUES (?, ?, ?, ?, ?)`
+).run('admin', hash, 'Administrator', 'admin', 1);
 
 function requireAuth(req, res, next) {
   if (!req.session || !req.session.user) {
